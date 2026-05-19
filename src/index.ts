@@ -1,1 +1,5 @@
-console.log("bot test")
+import { searchDataRain } from "./services/buienradar.js";
+
+async function run(){
+    
+}
