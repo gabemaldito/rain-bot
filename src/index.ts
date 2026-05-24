@@ -1,10 +1,18 @@
 import { searchDataRain } from "./services/buienradar.js";
 import express, { Request, Response } from "express";
+import { Telegraf } from 'telegraf';
+import dotenv from "dotenv";
 
+
+dotenv.config();
+
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN as string);
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(bot.webhookCallback('/webhook'));
+
 
 app.post("/webhook", async (req: Request, res: Response) => {
   const dadosClima = await searchDataRain("52.09", "5.12");
