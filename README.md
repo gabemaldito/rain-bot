@@ -6,7 +6,7 @@ A Telegram bot that provides **real-time rain forecasts** based on the user's GP
 
 ---
 
-## ☀️ How to us the bot
+## ☀️ How to use
 
       You  can use the Link: https://t.me/regenthebot
       Or search on Telegram for : @regenthebot
