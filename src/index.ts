@@ -9,121 +9,122 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN as string);
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Teclado com botão de compartilhar localização
+// Keyboard with location sharing button
 const locationKeyboard = Markup.keyboard([
-  [Markup.button.locationRequest("📍 Compartilhar minha localização")],
-  [{ text: "❌ Cancelar" }],
+  [Markup.button.locationRequest("📍 Share my location")],
+  [{ text: "❌ Cancel" }],
 ])
   .resize()
   .oneTime();
 
-// Teclado vazio (remove o teclado customizado)
+// Empty keyboard (removes the custom keyboard)
 const removeKeyboard = Markup.removeKeyboard();
 
-async function verificarChuva(lat: number, lon: number): Promise<string> {
+async function checkRain(lat: number, lon: number): Promise<string> {
   try {
-    const dadosClima = await searchDataRain(
+    const weatherData = await searchDataRain(
       lat.toFixed(4),
       lon.toFixed(4)
     );
 
-    const momentosChuva = dadosClima.forecasts.filter(
+    const rainyPeriods = weatherData.forecasts.filter(
       (item: any) => item.precipitation > 0
     );
 
-    if (momentosChuva.length > 0) {
-      const firstMoment = momentosChuva[0];
-      const lastMoment = momentosChuva[momentosChuva.length - 1];
+    if (rainyPeriods.length > 0) {
+      const firstMoment = rainyPeriods[0];
+      const lastMoment = rainyPeriods[rainyPeriods.length - 1];
 
       const startTime = firstMoment.datetime.split("T")[1].slice(0, 5);
       const endTime = lastMoment.datetime.split("T")[1].slice(0, 5);
 
       const maxPrecip = Math.max(
-        ...momentosChuva.map((m: any) => m.precipitation)
+        ...rainyPeriods.map((m: any) => m.precipitation)
       );
-      const intensidade =
+
+      const intensity =
         maxPrecip < 1
-          ? "🌦 Leve"
+          ? "🌦 Light"
           : maxPrecip < 5
-          ? "🌧 Moderada"
-          : "⛈ Forte";
+          ? "🌧 Moderate"
+          : "⛈ Heavy";
 
       return (
-        `🌧 *Alerta de chuva!*\n\n` +
-        `⏰ Período: *${startTime}* até *${endTime}*\n` +
-        `💧 Intensidade: ${intensidade}\n\n` +
-        `_Leve um guarda-chuva! ☂️_`
+        `🌧 *Rain alert!*\n\n` +
+        `⏰ Period: *${startTime}* until *${endTime}*\n` +
+        `💧 Intensity: ${intensity}\n\n` +
+        `_Don't forget your umbrella! ☂️_`
       );
     } else {
       return (
-        `☀️ *Sem chuva prevista!*\n\n` +
-        `✅ Pode sair tranquilo — sem chuva nas próximas 2 horas.\n\n` +
-        `_Dados: Buienradar_`
+        `☀️ *No rain expected!*\n\n` +
+        `✅ You're good to go — no rain forecast for the next 2 hours.\n\n` +
+        `_Powered by Buienradar_`
       );
     }
   } catch (error) {
-    console.error("Erro ao buscar dados de chuva:", error);
-    return "❌ Erro ao consultar a previsão. Tente novamente mais tarde.";
+    console.error("Error fetching rain data:", error);
+    return "❌ Failed to fetch the forecast. Please try again later.";
   }
 }
 
 // /start
 bot.command("start", (ctx: Context) => {
   ctx.reply(
-    `👋 Olá! Sou o *Rain Bot* 🌧\n\n` +
-      `Consulto a previsão de chuva em tempo real usando sua localização!\n\n` +
-      `Use /chuva para começar.`,
+    `👋 Hey! I'm *Rain Bot* 🌧\n\n` +
+      `I provide real-time rain forecasts based on your location!\n\n` +
+      `Use /rain to get started.`,
     { parse_mode: "Markdown", ...removeKeyboard }
   );
 });
 
-// /chuva — pede a localização do usuário
-bot.command("chuva", (ctx: Context) => {
+// /rain — requests the user's location
+bot.command("rain", (ctx: Context) => {
   ctx.reply(
-    `📍 Para verificar a chuva na *sua localização*, toque no botão abaixo:`,
+    `📍 To check the rain forecast at *your location*, tap the button below:`,
     { parse_mode: "Markdown", ...locationKeyboard }
   );
 });
 
-// /ajuda
-bot.command("ajuda", (ctx: Context) => {
+// /help
+bot.command("help", (ctx: Context) => {
   ctx.reply(
-    `📖 *Ajuda — Rain Bot*\n\n` +
-      `*Comandos:*\n` +
-      `• /start — boas-vindas\n` +
-      `• /chuva — verificar chuva na sua localização\n` +
-      `• /ajuda — esta mensagem\n\n` +
-      `_O bot usa sua localização GPS para buscar a previsão de chuva nas próximas 2 horas._`,
+    `📖 *Help — Rain Bot*\n\n` +
+      `*Commands:*\n` +
+      `• /start — welcome message\n` +
+      `• /rain — check rain at your location\n` +
+      `• /help — this message\n\n` +
+      `_The bot uses your GPS location to fetch the rain forecast for the next 2 hours._`,
     { parse_mode: "Markdown" }
   );
 });
 
-// Recebe a localização enviada pelo usuário
+// Receives the location shared by the user
 bot.on("location", async (ctx: Context) => {
   const message = ctx.message as any;
   const { latitude, longitude } = message.location;
 
-  await ctx.reply(`🔍 Consultando previsão para sua localização...`, removeKeyboard);
+  await ctx.reply(`🔍 Fetching forecast for your location...`, removeKeyboard);
 
-  const resposta = await verificarChuva(latitude, longitude);
-  await ctx.reply(resposta, { parse_mode: "Markdown" });
+  const response = await checkRain(latitude, longitude);
+  await ctx.reply(response, { parse_mode: "Markdown" });
 });
 
-// Cancelar
-bot.hears("❌ Cancelar", (ctx: Context) => {
-  ctx.reply("Tudo bem! Use /chuva quando quiser consultar.", removeKeyboard);
+// Cancel button handler
+bot.hears("❌ Cancel", (ctx: Context) => {
+  ctx.reply("No problem! Use /rain whenever you want to check the forecast.", removeKeyboard);
 });
 
-// Mensagem desconhecida
+// Unknown messages
 bot.on("text", (ctx: Context) => {
-  ctx.reply(`Não entendi. Use /chuva para verificar a previsão de chuva. 🌧`);
+  ctx.reply(`I didn't understand that. Use /rain to check the rain forecast. 🌧`);
 });
 
-// Express + Webhook
+// Express + Webhook setup
 app.use(express.json());
 app.use(bot.webhookCallback("/webhook"));
 
-// Health check
+// Health check endpoint
 app.get("/", (_req: Request, res: Response) => {
   res.json({
     status: "Rain Bot online 🌧",
@@ -132,16 +133,16 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.listen(port, async () => {
-  console.log(`🚀 Servidor rodando na porta ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 
   const webhookUrl = process.env.WEBHOOK_URL;
 
   if (webhookUrl) {
     const fullUrl = `${webhookUrl}/webhook`;
     await bot.telegram.setWebhook(fullUrl);
-    console.log(`✅ Webhook registrado: ${fullUrl}`);
+    console.log(`✅ Webhook registered: ${fullUrl}`);
   } else {
-    console.warn("⚠️  WEBHOOK_URL não definida — webhook não foi registrado.");
-    console.warn("   Defina WEBHOOK_URL nas variáveis de ambiente do Railway.");
+    console.warn("⚠️  WEBHOOK_URL is not set — webhook was not registered.");
+    console.warn("   Set WEBHOOK_URL in your environment variables.");
   }
 });
