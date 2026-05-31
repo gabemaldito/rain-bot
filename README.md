@@ -23,13 +23,13 @@ A Telegram bot that provides **real-time rain forecasts** based on the user's GP
 | Command | Description |
 |---|---|
 | `/start` | Welcome message and introduction |
-| `/chuva` | Request your location and check for rain |
-| `/ajuda` | Show help and available commands |
+| `/rain` | Request your location and check for rain |
+| `/help` | Show help and available commands |
 
 ### User Flow
 
 ```
-User  →  /chuva
+User  →  /rain
 Bot   →  Shows "Share my location" button (native Telegram UI)
 User  →  Taps the button (phone sends GPS coordinates)
 Bot   →  Queries Buienradar API with real coordinates
