@@ -27,6 +27,15 @@ async function checkRain(lat: number, lon: number): Promise<string> {
       lon.toFixed(4)
     );
 
+    // 🛑 TRAVA DE SEGURANÇA: Se a API falhar ou a coordenada for fora da Europa (Brasil)
+    if (!weatherData || !weatherData.forecasts) {
+      return (
+        `🗺️ *Location outside coverage area*\n\n` +
+        `Sorry! Buienradar only provides accurate rain forecasts for the Netherlands and parts of Northwestern Europe.\n\n` +
+        `_Your coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}_`
+      );
+    }
+
     const rainyPeriods = weatherData.forecasts.filter(
       (item: any) => item.precipitation > 0
     );
@@ -63,8 +72,8 @@ async function checkRain(lat: number, lon: number): Promise<string> {
       );
     }
   } catch (error) {
-    console.error("Error fetching rain data:", error);
-    return "❌ Failed to fetch the forecast. Please try again later.";
+    console.error("Error inside checkRain logic:", error);
+    return "❌ Failed to process the forecast. Please try again later.";
   }
 }
 
@@ -116,9 +125,6 @@ bot.hears("❌ Cancel", (ctx: Context) => {
 });
 
 // Unknown messages
-bot.on("text", (ctx: Context) => {
-  ctx.reply(`I didn't understand that. Use /rain to check the rain forecast. 🌧`);
-});
 
 // Express + Webhook setup
 app.use(express.json());
